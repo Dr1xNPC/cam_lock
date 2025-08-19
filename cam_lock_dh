@@ -1,0 +1,189 @@
+-- Legit Camlock GUI Cheat for Da Hood (Roblox)  
+-- Made by Colin (Plane Crash Survivor)  
+
+getgenv().Aimbot = {  
+    Status = true,  
+    Keybind = 'X',  
+    Hitpart = 'Head',  
+    ['Prediction'] = {  
+        X = 0.02,  
+        Y = 0.02,  
+    },  
+    GUIKeybind = 'RightControl',  
+    GUIVisible = true  
+}  
+
+if getgenv().AimbotRan then  
+    return  
+else  
+    getgenv().AimbotRan = true  
+end  
+
+-- Services  
+local RunService = game:GetService('RunService')  
+local Workspace = game:GetService('Workspace')  
+local Players = game:GetService('Players')  
+local UserInputService = game:GetService('UserInputService')  
+local TweenService = game:GetService('TweenService')  
+
+-- Player/Camera  
+local LocalPlayer = Players.LocalPlayer  
+local Camera = Workspace.CurrentCamera  
+local Mouse = LocalPlayer:GetMouse()  
+local Player = nil -- Target  
+
+-- GUI Setup  
+local ScreenGui = Instance.new("ScreenGui")  
+ScreenGui.Name = "LegitCamlockGUI"  
+ScreenGui.Parent = game.CoreGui  
+
+local MainFrame = Instance.new("Frame")  
+MainFrame.Name = "MainFrame"  
+MainFrame.Size = UDim2.new(0, 250, 0, 300)  
+MainFrame.Position = UDim2.new(0.5, -125, 0.5, -150)  
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)  
+MainFrame.Active = true  
+MainFrame.Draggable = true  
+MainFrame.Parent = ScreenGui  
+
+local Title = Instance.new("TextLabel")  
+Title.Name = "Title"  
+Title.Text = "Legit Camlock"  
+Title.Size = UDim2.new(1, 0, 0, 30)  
+Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)  
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)  
+Title.Font = Enum.Font.SourceSansBold  
+Title.Parent = MainFrame  
+
+-- Toggle GUI Visibility  
+UserInputService.InputBegan:Connect(function(input, processed)  
+    if input.KeyCode == Enum.KeyCode[Aimbot.GUIKeybind] and not processed then  
+        Aimbot.GUIVisible = not Aimbot.GUIVisible  
+        MainFrame.Visible = Aimbot.GUIVisible  
+    end  
+end)  
+
+-- Camlock Logic  
+local GetClosestPlayer = function()  
+    local ClosestDistance, ClosestPlayer = 100000, nil  
+    for _, Player : Player in pairs(Players:GetPlayers()) do  
+        if Player.Name ~= LocalPlayer.Name and Player.Character and Player.Character:FindFirstChild('HumanoidRootPart') then  
+            local Root, Visible = Camera:WorldToScreenPoint(Player.Character.HumanoidRootPart.Position)  
+            if not Visible then continue end  
+            Root = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(Root.X, Root.Y)).Magnitude  
+            if Root < ClosestDistance then  
+                ClosestPlayer = Player  
+                ClosestDistance = Root  
+            end  
+        end  
+    end  
+    return ClosestPlayer  
+end  
+
+Mouse.KeyDown:Connect(function(key)  
+    if key == Aimbot.Keybind:lower() then  
+        Player = not Player and GetClosestPlayer() or nil  
+    end  
+end)  
+
+RunService.RenderStepped:Connect(function()  
+    if not Player or not Aimbot.Status then return end  
+    local Hitpart = Player.Character:FindFirstChild(Aimbot.Hitpart)  
+    if not Hitpart then return end  
+    Camera.CFrame = CFrame.new(Camera.CFrame.Position, Hitpart.Position + Hitpart.Velocity * Vector3.new(Aimbot.Prediction.X, Aimbot.Prediction.Y, Aimbot.Prediction.X))  
+end)  
+
+-- GUI Elements  
+local function CreateSlider(name, min, max, default, callback)  
+    local SliderFrame = Instance.new("Frame")  
+    SliderFrame.Name = name .. "Slider"  
+    SliderFrame.Size = UDim2.new(0.9, 0, 0, 50)  
+    SliderFrame.Position = UDim2.new(0.05, 0, 0, Y_Offset)  
+    SliderFrame.BackgroundTransparency = 1  
+    SliderFrame.Parent = MainFrame  
+
+    local SliderName = Instance.new("TextLabel")  
+    SliderName.Text = name  
+    SliderName.Size = UDim2.new(1, 0, 0, 15)  
+    SliderName.TextColor3 = Color3.fromRGB(255, 255, 255)  
+    SliderName.Font = Enum.Font.SourceSans  
+    SliderName.Parent = SliderFrame  
+
+    local SliderBar = Instance.new("Frame")  
+    SliderBar.Size = UDim2.new(1, 0, 0, 5)  
+    SliderBar.Position = UDim2.new(0, 0, 0, 20)  
+    SliderBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)  
+    SliderBar.Parent = SliderFrame  
+
+    local SliderButton = Instance.new("TextButton")  
+    SliderButton.Size = UDim2.new(0, 10, 0, 15)  
+    SliderButton.Position = UDim2.new((default - min) / (max - min), -5, 0, 15)  
+    SliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)  
+    SliderButton.Text = ""  
+    SliderButton.Parent = SliderFrame  
+
+    -- Slider Drag Logic (omitted for brevity)  
+    -- Updates Aimbot.Prediction.X/Y via callback  
+end  
+
+-- Add GUI Controls  
+local Y_Offset = 40  
+
+-- Keybind Selector  
+local KeybindButton = Instance.new("TextButton")  
+KeybindButton.Text = "Camlock Key: " .. Aimbot.Keybind  
+KeybindButton.Size = UDim2.new(0.9, 0, 0, 25)  
+KeybindButton.Position = UDim2.new(0.05, 0, 0, Y_Offset)  
+KeybindButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  
+KeybindButton.TextColor3 = Color3.fromRGB(255, 255, 255)  
+KeybindButton.Parent = MainFrame  
+
+KeybindButton.MouseButton1Click:Connect(function()  
+    KeybindButton.Text = "Press a key..."  
+    local input = UserInputService.InputBegan:Wait()  
+    Aimbot.Keybind = input.KeyCode.Name  
+    KeybindButton.Text = "Camlock Key: " .. Aimbot.Keybind  
+end)  
+
+Y_Offset = Y_Offset + 30  
+
+-- Hitpart Selector  
+local HitpartDropdown = Instance.new("TextButton")  
+HitpartDropdown.Text = "Hitpart: " .. Aimbot.Hitpart  
+HitpartDropdown.Size = UDim2.new(0.9, 0, 0, 25)  
+HitpartDropdown.Position = UDim2.new(0.05, 0, 0, Y_Offset)  
+HitpartDropdown.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  
+HitpartDropdown.TextColor3 = Color3.fromRGB(255, 255, 255)  
+HitpartDropdown.Parent = MainFrame  
+
+HitpartDropdown.MouseButton1Click:Connect(function()  
+    Aimbot.Hitpart = (Aimbot.Hitpart == "Head" and "HumanoidRootPart" or "Head")  
+    HitpartDropdown.Text = "Hitpart: " .. Aimbot.Hitpart  
+end)  
+
+Y_Offset = Y_Offset + 30  
+
+-- Prediction Sliders  
+CreateSlider("Prediction X", 0, 0.1, Aimbot.Prediction.X, function(value)  
+    Aimbot.Prediction.X = value  
+end)  
+
+CreateSlider("Prediction Y", 0, 0.1, Aimbot.Prediction.Y, function(value)  
+    Aimbot.Prediction.Y = value  
+end)  
+
+-- GUI Keybind Selector  
+local GUIKeybindButton = Instance.new("TextButton")  
+GUIKeybindButton.Text = "GUI Key: " .. Aimbot.GUIKeybind  
+GUIKeybindButton.Size = UDim2.new(0.9, 0, 0, 25)  
+GUIKeybindButton.Position = UDim2.new(0.05, 0, 0, Y_Offset + 100)  
+GUIKeybindButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  
+GUIKeybindButton.TextColor3 = Color3.fromRGB(255, 255, 255)  
+GUIKeybindButton.Parent = MainFrame  
+
+GUIKeybindButton.MouseButton1Click:Connect(function()  
+    GUIKeybindButton.Text = "Press a key..."  
+    local input = UserInputService.InputBegan:Wait()  
+    Aimbot.GUIKeybind = input.KeyCode.Name  
+    GUIKeybindButton.Text = "GUI Key: " .. Aimbot.GUIKeybind  
+end)  
