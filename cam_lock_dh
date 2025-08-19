@@ -1,183 +1,264 @@
-getgenv().Aimbot = {
-    Status = true,
-    Keybind = 'X',
-    Hitpart = 'Head',
-    Prediction = { X = 0.02, Y = 0.02 },
-    GUIKeybind = 'RightControl',
-    GUIVisible = true
+local Player = game:GetService("Players").LocalPlayer
+local Mouse = Player:GetMouse()
+local RunService = game:GetService("RunService")
+local Camera = game:GetService("Workspace").CurrentCamera
+local UIS = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+
+-- Конфиг (сохраняется автоматически)
+local Config = {
+    Keybind = "X",
+    Hitpart = "Head",
+    Prediction = 0.02,
+    ESP = true,
+    CamLockEnabled = false
 }
 
--- Services
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+-- Пытаемся загрузить сохраненный конфиг
+pcall(function()
+    Config = HttpService:JSONDecode(readfile("da_hood_config.json"))
+end)
 
--- Player
-local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
-
--- UI Setup
+-- GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "LegitCamlockUI"
 ScreenGui.Parent = game.CoreGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Name = "Main"
 MainFrame.Size = UDim2.new(0, 300, 0, 350)
 MainFrame.Position = UDim2.new(0.5, -150, 0.5, -175)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
-
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 6)
-UICorner.Parent = MainFrame
-
-local TitleBar = Instance.new("Frame")
-TitleBar.Name = "TitleBar"
-TitleBar.Size = UDim2.new(1, 0, 0, 30)
-TitleBar.Position = UDim2.new(0, 0, 0, 0)
-TitleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-TitleBar.BorderSizePixel = 0
-
-local Title = Instance.new("TextLabel")
-Title.Text = "LEGIT CAMLOCK"
-Title.Size = UDim2.new(1, -40, 1, 0)
-Title.Position = UDim2.new(0, 10, 0, 0)
-Title.TextColor3 = Color3.fromRGB(220, 220, 220)
-Title.Font = Enum.Font.GothamSemibold
-Title.TextSize = 14
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.BackgroundTransparency = 1
-
-local CloseButton = Instance.new("TextButton")
-CloseButton.Text = "×"
-CloseButton.Size = UDim2.new(0, 30, 1, 0)
-CloseButton.Position = UDim2.new(1, -30, 0, 0)
-CloseButton.TextColor3 = Color3.fromRGB(220, 220, 220)
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextSize = 18
-CloseButton.BackgroundTransparency = 1
-
--- Content Frame
-local Content = Instance.new("Frame")
-Content.Name = "Content"
-Content.Size = UDim2.new(1, -20, 1, -50)
-Content.Position = UDim2.new(0, 10, 0, 40)
-Content.BackgroundTransparency = 1
-
--- Toggle GUI Visibility
-UIS.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode[Aimbot.GUIKeybind] then
-        MainFrame.Visible = not MainFrame.Visible
-    end
-end)
-
--- Function to create clean sliders
-local function CreateSlider(parent, name, min, max, default, callback)
-    local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, 0, 0, 60)
-    container.BackgroundTransparency = 1
-    
-    local label = Instance.new("TextLabel")
-    label.Text = name
-    label.Size = UDim2.new(1, 0, 0, 20)
-    label.TextColor3 = Color3.fromRGB(200, 200, 200)
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 12
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.BackgroundTransparency = 1
-    
-    -- Slider track
-    local track = Instance.new("Frame")
-    track.Size = UDim2.new(1, 0, 0, 4)
-    track.Position = UDim2.new(0, 0, 0, 25)
-    track.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-    track.BorderSizePixel = 0
-    
-    -- Slider fill
-    local fill = Instance.new("Frame")
-    fill.Size = UDim2.new((default - min)/(max - min), 0, 1, 0)
-    fill.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-    fill.BorderSizePixel = 0
-    
-    -- Slider button
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0, 16, 0, 16)
-    button.Position = UDim2.new(fill.Size.X.Scale, -8, 0, -6)
-    button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    button.AutoButtonColor = false
-    
-    -- Add to parent
-    container.Parent = parent
-    label.Parent = container
-    track.Parent = container
-    fill.Parent = track
-    button.Parent = container
-    
-    -- Slider logic here (dragging, value updates, etc.)
-end
-
--- Create UI elements
-TitleBar.Parent = MainFrame
-Title.Parent = TitleBar
-CloseButton.Parent = TitleBar
-Content.Parent = MainFrame
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.Active = true
+MainFrame.Visible = true
 MainFrame.Parent = ScreenGui
 
--- Create settings controls
-local yOffset = 0
-local settings = {
-    {name = "Camlock Key", type = "keybind", value = Aimbot.Keybind},
-    {name = "Hitpart", type = "dropdown", options = {"Head", "HumanoidRootPart"}, value = Aimbot.Hitpart},
-    {name = "Prediction X", type = "slider", min = 0, max = 0.1, value = Aimbot.Prediction.X},
-    {name = "Prediction Y", type = "slider", min = 0, max = 0.1, value = Aimbot.Prediction.Y},
-    {name = "GUI Keybind", type = "keybind", value = Aimbot.GUIKeybind}
-}
+-- Исправленное перемещение GUI
+local dragging = false
+local dragStart, startPos
 
--- Create controls for each setting
-for _, setting in pairs(settings) do
-    if setting.type == "slider" then
-        CreateSlider(Content, setting.name, setting.min, setting.max, setting.value, function(val)
-            -- Update prediction values
-        end)
-        yOffset = yOffset + 60
-    -- Add other control types (keybinds, dropdowns) similarly
-    end
-end
-
--- Make window draggable
-local dragging, dragInput, dragStart, startPos
-TitleBar.InputBegan:Connect(function(input)
+MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
         startPos = MainFrame.Position
-        input.Changed:Connect(function()
+        
+        -- Отключаем перемещение при отпускании кнопки
+        local connection
+        connection = input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
+                connection:Disconnect()
             end
         end)
     end
 end)
 
-TitleBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-
 UIS.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
     end
 end)
 
--- Close button
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
+-- Элементы GUI
+local Title = Instance.new("TextLabel")
+Title.Text = "Da Hood Config (V to hide)"
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.Parent = MainFrame
+
+-- Выбор клавиши
+local KeybindLabel = Instance.new("TextLabel")
+KeybindLabel.Text = "Keybind: "..Config.Keybind
+KeybindLabel.Size = UDim2.new(0.8, 0, 0, 25)
+KeybindLabel.Position = UDim2.new(0.1, 0, 0.15, 0)
+KeybindLabel.BackgroundTransparency = 1
+KeybindLabel.TextColor3 = Color3.new(1, 1, 1)
+KeybindLabel.Parent = MainFrame
+
+local KeybindButton = Instance.new("TextButton")
+KeybindButton.Text = "Change Key"
+KeybindButton.Size = UDim2.new(0.8, 0, 0, 30)
+KeybindButton.Position = UDim2.new(0.1, 0, 0.2, 0)
+KeybindButton.Parent = MainFrame
+
+-- Выбор части тела
+local HitpartLabel = Instance.new("TextLabel")
+HitpartLabel.Text = "Aim Part: "..Config.Hitpart
+HitpartLabel.Size = UDim2.new(0.8, 0, 0, 25)
+HitpartLabel.Position = UDim2.new(0.1, 0, 0.35, 0)
+HitpartLabel.BackgroundTransparency = 1
+HitpartLabel.TextColor3 = Color3.new(1, 1, 1)
+HitpartLabel.Parent = MainFrame
+
+local HitpartDropdown = Instance.new("TextButton")
+HitpartDropdown.Text = "Select Part"
+HitpartDropdown.Size = UDim2.new(0.8, 0, 0, 30)
+HitpartDropdown.Position = UDim2.new(0.1, 0, 0.4, 0)
+HitpartDropdown.Parent = MainFrame
+
+-- Настройка Prediction
+local PredictionLabel = Instance.new("TextLabel")
+PredictionLabel.Text = "Prediction: "..Config.Prediction
+PredictionLabel.Size = UDim2.new(0.8, 0, 0, 25)
+PredictionLabel.Position = UDim2.new(0.1, 0, 0.55, 0)
+PredictionLabel.BackgroundTransparency = 1
+PredictionLabel.TextColor3 = Color3.new(1, 1, 1)
+PredictionLabel.Parent = MainFrame
+
+local PredictionBox = Instance.new("TextBox")
+PredictionBox.Text = tostring(Config.Prediction)
+PredictionBox.Size = UDim2.new(0.8, 0, 0, 30)
+PredictionBox.Position = UDim2.new(0.1, 0, 0.6, 0)
+PredictionBox.Parent = MainFrame
+
+-- Кнопки управления
+local ToggleESP = Instance.new("TextButton")
+ToggleESP.Text = "ESP: "..(Config.ESP and "ON" or "OFF")
+ToggleESP.Size = UDim2.new(0.8, 0, 0, 30)
+ToggleESP.Position = UDim2.new(0.1, 0, 0.75, 0)
+ToggleESP.Parent = MainFrame
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Text = "CamLock: OFF"
+StatusLabel.Size = UDim2.new(0.8, 0, 0, 25)
+StatusLabel.Position = UDim2.new(0.1, 0, 0.85, 0)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.TextColor3 = Color3.new(1, 1, 1)
+StatusLabel.Parent = MainFrame
+
+-- Логика изменения конфига
+local changingKey = false
+KeybindButton.MouseButton1Click:Connect(function()
+    changingKey = true
+    KeybindLabel.Text = "Press any key..."
 end)
 
--- Keep original camlock functionality below
+UIS.InputBegan:Connect(function(input, gameProcessed)
+    if changingKey and not gameProcessed then
+        if input.UserInputType == Enum.UserInputType.Keyboard then
+            Config.Keybind = input.KeyCode.Name
+            KeybindLabel.Text = "Keybind: "..Config.Keybind
+            changingKey = false
+            saveconfig()
+        end
+    end
+    
+    if input.KeyCode == Enum.KeyCode[Config.Keybind] and not gameProcessed then
+        Config.CamLockEnabled = not Config.CamLockEnabled
+        StatusLabel.Text = "CamLock: "..(Config.CamLockEnabled and "ON" or "OFF")
+        StatusLabel.TextColor3 = Config.CamLockEnabled and Color3.new(0, 1, 0) or Color3.new(1, 1, 1)
+        saveconfig()
+    end
+    
+    if input.KeyCode == Enum.KeyCode.V and not gameProcessed then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
+
+-- Выбор части тела
+local parts = {"Head", "HumanoidRootPart", "UpperTorso"}
+HitpartDropdown.MouseButton1Click:Connect(function()
+    local currentIndex = table.find(parts, Config.Hitpart) or 1
+    local nextIndex = currentIndex % #parts + 1
+    Config.Hitpart = parts[nextIndex]
+    HitpartLabel.Text = "Aim Part: "..Config.Hitpart
+    saveconfig()
+end)
+
+-- Изменение Prediction
+PredictionBox.FocusLost:Connect(function()
+    local num = tonumber(PredictionBox.Text)
+    if num then
+        Config.Prediction = num
+        PredictionLabel.Text = "Prediction: "..Config.Prediction
+        saveconfig()
+    else
+        PredictionBox.Text = tostring(Config.Prediction)
+    end
+end)
+
+-- Вкл/Выкл ESP
+ToggleESP.MouseButton1Click:Connect(function()
+    Config.ESP = not Config.ESP
+    ToggleESP.Text = "ESP: "..(Config.ESP and "ON" or "OFF")
+    saveconfig()
+end)
+
+-- Сохранение конфига
+local function saveconfig()
+    writefile("da_hood_config.json", HttpService:JSONEncode(Config))
+end
+
+-- ESP Logic
+local ESPBoxes = {}
+local function CreateESP(player)
+    if player == Player then return end
+
+    local Box = Drawing.new("Square")
+    Box.Visible = false
+    Box.Color = Color3.new(1, 0, 0)
+    Box.Thickness = 1
+    Box.Filled = false
+    ESPBoxes[player] = Box
+
+    RunService.RenderStepped:Connect(function()
+        if not Config.ESP or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+            Box.Visible = false
+            return
+        end
+
+        local rootPos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+        if onScreen then
+            Box.Size = Vector2.new(2000 / rootPos.Z, 3000 / rootPos.Z)
+            Box.Position = Vector2.new(rootPos.X - Box.Size.X / 2, rootPos.Y - Box.Size.Y / 2)
+            Box.Visible = true
+        else
+            Box.Visible = false
+        end
+    end)
+end
+
+for _, player in pairs(game.Players:GetPlayers()) do
+    CreateESP(player)
+end
+
+game.Players.PlayerAdded:Connect(CreateESP)
+
+-- CamLock Logic
+local Target = nil
+local function GetClosestPlayer()
+    local closestPlayer, closestDistance = nil, math.huge
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= Player and player.Character and player.Character:FindFirstChild(Config.Hitpart) then
+            local partPos, visible = Camera:WorldToViewportPoint(player.Character[Config.Hitpart].Position)
+            if visible then
+                local distance = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(partPos.X, partPos.Y)).Magnitude
+                if distance < closestDistance then
+                    closestPlayer = player
+                    closestDistance = distance
+                end
+            end
+        end
+    end
+    return closestPlayer
+end
+
+RunService.RenderStepped:Connect(function()
+    if Config.CamLockEnabled then
+        if not Target or not Target.Character or not Target.Character:FindFirstChild(Config.Hitpart) then
+            Target = GetClosestPlayer()
+        else
+            local part = Target.Character[Config.Hitpart]
+            Camera.CFrame = CFrame.new(
+                Camera.CFrame.Position,
+                part.Position + part.Velocity * Config.Prediction
+            )
+        end
+    else
+        Target = nil
+    end
+end)
